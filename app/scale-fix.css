@@ -1,0 +1,29 @@
+.mannequin-row {
+  position: absolute;
+  left: 70px;
+  right: 0;
+  bottom: 5%;
+  height: 90%;
+  padding: 0;
+  align-items: flex-end;
+}
+
+.figure {
+  height: 100%;
+  position: relative;
+}
+
+.figure .mannequin {
+  height: 100%;
+  width: auto;
+  max-height: none;
+}
+
+.figure-label {
+  position: absolute;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+}
+
+.floor-line { bottom: 5%; }
