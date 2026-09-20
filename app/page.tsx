@@ -18,6 +18,8 @@ export default function Page() {
   const [items, setItems] = useState(initial);
   const [selected, setSelected] = useState(1);
   const [spacing, setSpacing] = useState(90);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
   const [modal, setModal] = useState(false);
   const [renameId, setRenameId] = useState<number|null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -51,12 +53,15 @@ export default function Page() {
     image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data);
   };
 
-  return <main className="app">
+  return <main className={`app${leftCollapsed ? ' left-collapsed' : ''}${rightCollapsed ? ' right-collapsed' : ''}`}>
     <aside className="sidebar left">
+      <button className="sidebar-toggle left-toggle" aria-label={leftCollapsed ? '왼쪽 사이드바 열기' : '왼쪽 사이드바 접기'} onClick={() => setLeftCollapsed(!leftCollapsed)}>{leftCollapsed ? '›' : '‹'}</button>
+      <div className="sidebar-content">
       <div className="brand"><span className="mark">BM</span><div><strong>Body Mannequin</strong><small>Designer · v0.1</small></div></div>
       <div className="side-title"><span>인물</span><em>{items.length} / 5</em></div>
       <div className="cards">{items.map((item, index) => <button className={'card '+(item.id === selected ? 'active' : '')} key={item.id} onClick={() => setSelected(item.id)} onDoubleClick={(event) => { event.stopPropagation(); openRename(item); }} draggable onDragStart={(event) => event.dataTransfer.setData('i',String(index))} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { const from = Number(event.dataTransfer.getData('i')); const next = [...items]; const [moved] = next.splice(from,1); next.splice(index,0,moved); setItems(next); }}><span className="dot" style={{background:item.color}}/><span className="card-main"><strong>{item.name}</strong><small>{item.sex} · {item.height} cm · {item.weight} kg</small><small>{item.head.toFixed(1)}H</small></span><span className="card-actions"><i onClick={(event) => { event.stopPropagation(); move(index,-1); }}>↑</i><i onClick={(event) => { event.stopPropagation(); remove(item.id); }}>×</i></span></button>)}</div>
       <button className="add" onClick={() => setModal(true)} disabled={items.length >= 5}>＋ 인물 추가</button>
+      </div>
     </aside>
     <section className="workspace">
       <div className="canvas-head"><div><span className="eyebrow">COMPARISON CANVAS</span><h1>신체 비교</h1></div><div className="canvas-tools"><button onClick={fitCanvas}>화면 맞춤</button><span>100%</span></div></div>
@@ -81,6 +86,8 @@ export default function Page() {
       <div className="canvas-foot"><label>인물 간격 <input type="range" min="30" max="180" value={spacing} onChange={(event) => setSpacing(+event.target.value)}/></label><span>가로 · 세로 스크롤 · 선택 인물 {cur.name}</span></div>
     </section>
     <aside className="sidebar right">
+      <button className="sidebar-toggle right-toggle" aria-label={rightCollapsed ? '오른쪽 사이드바 열기' : '오른쪽 사이드바 접기'} onClick={() => setRightCollapsed(!rightCollapsed)}>{rightCollapsed ? '‹' : '›'}</button>
+      <div className="sidebar-content">
       <div className="right-pane profile-pane">
         <div className="panel-title"><span>선택 인물</span><span className="selected-dot" style={{background:cur.color}}/></div><div className="profile"><input className="profile-name" aria-label="인물 이름" value={cur.name} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,name:event.target.value} : item))}/><span>{cur.sex}</span></div>
         <div className="field-grid"><label>키(cm)<input type="number" min="100" max="250" value={cur.height} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,height:+event.target.value} : item))}/></label><label>체중(kg)<input type="number" min="20" max="250" value={cur.weight} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,weight:+event.target.value} : item))}/></label><label>등신(H)<input type="number" min="4" max="10" step=".1" value={cur.head} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,head:+event.target.value} : item))}/></label></div>
@@ -94,6 +101,7 @@ export default function Page() {
       {mannequinVisible&&<div className="right-pane body-pane">
         <BodyControls modifiers={cur.mod} onChange={update} onActiveKey={setActiveDebugKey} onReset={() => setItems(items.map((item) => item.id === cur.id ? {...item,mod:{...empty}} : item))}/>
       </div>}
+      </div>
     </aside>
     <footer><span>Body Mannequin Designer <small>v0.1 · Phase 5</small></span><button onClick={exportPng}>마네킹 이미지 저장</button></footer>
     {modal && <div className="modal-backdrop"><div className="modal"><h2>인물 추가</h2><label>이름<input value={draft.name} onChange={(event) => setDraft({...draft,name:event.target.value})}/></label><label>성별<select value={draft.sex} onChange={(event) => setDraft({...draft,sex:event.target.value as '남성'|'여성'})}><option>남성</option><option>여성</option></select></label><div className="row"><label>키(cm)<input type="number" value={draft.height} onChange={(event) => setDraft({...draft,height:+event.target.value})}/></label><label>체중(kg)<input type="number" value={draft.weight} onChange={(event) => setDraft({...draft,weight:+event.target.value})}/></label></div><label>등신(H)<input type="number" step=".1" value={draft.head} onChange={(event) => setDraft({...draft,head:+event.target.value})}/></label><div className="modal-actions"><button onClick={() => setModal(false)}>취소</button><button className="primary" onClick={add}>추가하기</button></div></div></div>}
