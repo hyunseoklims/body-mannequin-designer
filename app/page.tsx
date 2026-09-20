@@ -4,13 +4,14 @@ import { useRef, useState } from 'react';
 import Mannequin from '../components/Mannequin';
 import BodyControls from '../components/BodyControls';
 import { calculateBodySpec, defaultModifiers, ManualModifiers } from '../lib/body-model';
+import { BodyPresetLevel, PresetMode, calculateBmi, resolvedPreset } from '../lib/body-presets';
 
-type Character = { id:number; name:string; sex:'남성'|'여성'; height:number; weight:number; head:number; color:string; mod:ManualModifiers };
+type Character = { id:number; name:string; sex:'남성'|'여성'; height:number; weight:number; head:number; color:string; mod:ManualModifiers; presetMode:PresetMode; manualPreset:BodyPresetLevel };
 const colors = ['#3478f6','#ed6a5a','#20a486','#9b5de5','#f4a261'];
 const empty:ManualModifiers = defaultModifiers;
 const initial:Character[] = [
-  { id:1, name:'기본 남성', sex:'남성', height:175, weight:65, head:7.5, color:colors[0], mod:{...empty} },
-  { id:2, name:'기본 여성', sex:'여성', height:162, weight:52, head:7.5, color:colors[1], mod:{...empty} },
+  { id:1, name:'기본 남성', sex:'남성', height:175, weight:65, head:7.5, color:colors[0], mod:{...empty}, presetMode:'auto', manualPreset:3 },
+  { id:2, name:'기본 여성', sex:'여성', height:162, weight:52, head:7.5, color:colors[1], mod:{...empty}, presetMode:'auto', manualPreset:3 },
 ];
 
 export default function Page() {
@@ -33,7 +34,7 @@ export default function Page() {
   const cur = items.find((item) => item.id === selected) || items[0];
   const specs = items.map((item) => ({ ...item, spec: calculateBodySpec({ sex:item.sex, height:item.height, weight:item.weight, headCount:item.head, modifiers:item.mod }) }));
 
-  const add = () => { if (items.length < 5) { setItems([...items, { ...draft, id:Date.now(), color:colors[items.length], mod:{...empty} }]); setModal(false); } };
+  const add = () => { if (items.length < 5) { setItems([...items, { ...draft, id:Date.now(), color:colors[items.length], mod:{...empty}, presetMode:'auto', manualPreset:3 }]); setModal(false); } };
   const update = (key:keyof ManualModifiers, value:number) => setItems(items.map((item) => item.id === cur.id ? { ...item, mod:{...item.mod,[key]:value} } : item));
   const remove = (id:number) => { if (items.length > 1) { const next = items.filter((item) => item.id !== id); setItems(next); if (id === selected) setSelected(next[0].id); } };
   const move = (index:number, direction:number) => { const target = index + direction; if (target < 0 || target >= items.length) return; const next = [...items]; [next[index], next[target]] = [next[target], next[index]]; setItems(next); };
@@ -75,7 +76,7 @@ export default function Page() {
       <div className="canvas" ref={canvasRef}><div className="compare-stage">
         <div className="height-axis">{Array.from({length:21},(_,i) => <span key={i}>{200-i*10}</span>)}</div>
         <div className="grid-lines">{Array.from({length:21},(_,i) => <i key={i} style={{top:(i*5)+'%'}}/>)}</div>
-      <div className="mannequin-row" style={{gap:spacing}}>{specs.map((item) => { const isSelected=item.id===selected; return <div className={'figure '+(isSelected ? 'chosen' : '')} key={item.id} onClick={() => setSelected(item.id)}><Mannequin spec={item.spec} debug={debugEnabled&&isSelected&&mannequinVisible} activeDebugKey={activeDebugKey} showReference={referenceVisible} referenceSex={item.sex} referenceOpacity={referenceOpacity/100} mannequinOpacity={mannequinOpacity/100} showCenterLine={showCenterLine} showHeightGuide={showHeightGuide} referenceOnly={!mannequinVisible}/><div className="figure-label" style={{top:'calc('+(100-item.spec.height/2)+'% - 24px)'}}><i style={{background:item.color}}/>{item.name} <small>({item.height}cm, {item.weight}kg)</small></div></div>; })}</div>
+      <div className="mannequin-row" style={{gap:spacing}}>{specs.map((item) => { const isSelected=item.id===selected; return <div className={'figure '+(isSelected ? 'chosen' : '')} key={item.id} onClick={() => setSelected(item.id)}><Mannequin spec={item.spec} debug={debugEnabled&&isSelected&&mannequinVisible} activeDebugKey={activeDebugKey} showReference={referenceVisible} referenceSex={item.sex} referenceOpacity={referenceOpacity/100} mannequinOpacity={mannequinOpacity/100} showCenterLine={showCenterLine} showHeightGuide={showHeightGuide} referenceOnly={!mannequinVisible} presetLevel={resolvedPreset(item.height,item.weight,item.presetMode,item.manualPreset)}/><div className="figure-label" style={{top:'calc('+(100-item.spec.height/2)+'% - 24px)'}}><i style={{background:item.color}}/>{item.name} <small>({item.height}cm, {item.weight}kg)</small></div></div>; })}</div>
       </div></div>
       <div className="canvas-foot"><label>인물 간격 <input type="range" min="30" max="180" value={spacing} onChange={(event) => setSpacing(+event.target.value)}/></label><span>가로 · 세로 스크롤 · 선택 인물 {cur.name}</span></div>
     </section>
@@ -83,6 +84,12 @@ export default function Page() {
       <div className="right-pane profile-pane">
         <div className="panel-title"><span>선택 인물</span><span className="selected-dot" style={{background:cur.color}}/></div><div className="profile"><input className="profile-name" aria-label="인물 이름" value={cur.name} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,name:event.target.value} : item))}/><span>{cur.sex}</span></div>
         <div className="field-grid"><label>키(cm)<input type="number" min="100" max="250" value={cur.height} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,height:+event.target.value} : item))}/></label><label>체중(kg)<input type="number" min="20" max="250" value={cur.weight} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,weight:+event.target.value} : item))}/></label><label>등신(H)<input type="number" min="4" max="10" step=".1" value={cur.head} onChange={(event) => setItems(items.map((item) => item.id === cur.id ? {...item,head:+event.target.value} : item))}/></label></div>
+        <div className="preset-panel">
+          <div><strong>BMI</strong><span>{calculateBmi(cur.height,cur.weight).toFixed(1)}</span></div>
+          <div><strong>체형 프리셋</strong><span>{resolvedPreset(cur.height,cur.weight,cur.presetMode,cur.manualPreset)}단계</span></div>
+          <div className="preset-levels">{([1,2,3,4,5] as BodyPresetLevel[]).map((level)=><button key={level} className={resolvedPreset(cur.height,cur.weight,cur.presetMode,cur.manualPreset)===level?'active':''} onClick={()=>setItems(items.map((item)=>item.id===cur.id?{...item,presetMode:'manual',manualPreset:level}:item))}>{level}</button>)}</div>
+          <button className="preset-auto" disabled={cur.presetMode==='auto'} onClick={()=>setItems(items.map((item)=>item.id===cur.id?{...item,presetMode:'auto'}:item))}>BMI 자동 선택{cur.presetMode==='auto'?' · 사용 중':''}</button>
+        </div>
       </div>
       {mannequinVisible&&<div className="right-pane body-pane">
         <BodyControls modifiers={cur.mod} onChange={update} onActiveKey={setActiveDebugKey} onReset={() => setItems(items.map((item) => item.id === cur.id ? {...item,mod:{...empty}} : item))}/>
