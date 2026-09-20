@@ -10,3 +10,18 @@
 .preset-levels button.active{background:#3478f6;border-color:#3478f6;color:#fff;font-weight:700}
 .preset-auto{width:100%;font-size:12px;color:#344050}
 .preset-auto:disabled{cursor:default;background:#eef3f8;color:#697787}
+
+/* Collapsible sidebars */
+.app{transition:grid-template-columns .18s ease}
+.sidebar{position:relative;overflow:visible}
+.sidebar-content{height:100%;overflow:hidden}
+.sidebar-toggle{position:absolute;z-index:20;top:50%;transform:translateY(-50%);width:28px;height:44px;display:grid;place-items:center;border:1px solid #dfe5ea;background:#fff;border-radius:8px;box-shadow:0 2px 8px #17202a14;font-size:20px;line-height:1;color:#697681}
+.left-toggle{right:-14px}
+.right-toggle{left:-14px}
+.app.left-collapsed{grid-template-columns:28px minmax(480px,1fr) 284px}
+.app.right-collapsed{grid-template-columns:248px minmax(480px,1fr) 28px}
+.app.left-collapsed.right-collapsed{grid-template-columns:28px minmax(480px,1fr) 28px}
+.app.left-collapsed .left,.app.right-collapsed .right{padding-left:0;padding-right:0}
+.app.left-collapsed .left .sidebar-content,.app.right-collapsed .right .sidebar-content{display:none}
+.app.left-collapsed .left-toggle{right:-14px}
+.app.right-collapsed .right-toggle{left:-14px}
