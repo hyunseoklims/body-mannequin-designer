@@ -21,6 +21,7 @@ export default function Page() {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [modal, setModal] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [renameId, setRenameId] = useState<number|null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [draft, setDraft] = useState({ name:'새 인물', sex:'남성' as '남성'|'여성', height:175, weight:65, head:7.5 });
@@ -103,7 +104,8 @@ export default function Page() {
       </div>}
       </div>
     </aside>
-    <footer><span>Body Mannequin Designer <small>v0.1 · Phase 5</small></span><button onClick={exportPng}>마네킹 이미지 저장</button></footer>
+    <footer><span>Body Mannequin Designer <small>v0.1 · Phase 5</small></span><div className="footer-actions"><button className="preview-button" onClick={() => setPreviewOpen(true)}>미리보기</button><button onClick={exportPng}>마네킹 이미지 저장</button></div></footer>
+    {previewOpen && <div className="modal-backdrop preview-backdrop" onClick={() => setPreviewOpen(false)}><div className="preview-modal" onClick={(event) => event.stopPropagation()}><div className="preview-head"><strong>이미지 미리보기</strong><button onClick={() => setPreviewOpen(false)}>×</button></div><div className="preview-stage">{specs.map((item) => <div className="preview-figure" key={item.id}><Mannequin spec={item.spec} showReference={referenceVisible} referenceSex={item.sex} referenceOpacity={referenceOpacity/100} mannequinOpacity={mannequinOpacity/100} showCenterLine={false} showHeightGuide={false} referenceOnly={!mannequinVisible} presetLevel={resolvedPreset(item.height,item.weight,item.presetMode,item.manualPreset)}/><span>{item.name} · {item.height}cm</span></div>)}</div></div></div>}
     {modal && <div className="modal-backdrop"><div className="modal"><h2>인물 추가</h2><label>이름<input value={draft.name} onChange={(event) => setDraft({...draft,name:event.target.value})}/></label><label>성별<select value={draft.sex} onChange={(event) => setDraft({...draft,sex:event.target.value as '남성'|'여성'})}><option>남성</option><option>여성</option></select></label><div className="row"><label>키(cm)<input type="number" value={draft.height} onChange={(event) => setDraft({...draft,height:+event.target.value})}/></label><label>체중(kg)<input type="number" value={draft.weight} onChange={(event) => setDraft({...draft,weight:+event.target.value})}/></label></div><label>등신(H)<input type="number" step=".1" value={draft.head} onChange={(event) => setDraft({...draft,head:+event.target.value})}/></label><div className="modal-actions"><button onClick={() => setModal(false)}>취소</button><button className="primary" onClick={add}>추가하기</button></div></div></div>}
     {renameId!==null && <div className="modal-backdrop" onDoubleClick={() => setRenameId(null)}><div className="modal" onDoubleClick={(event) => event.stopPropagation()}><h2>이름 수정</h2><label>인물 이름<input autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onKeyDown={(event) => { if(event.key==='Enter') saveRename(); if(event.key==='Escape') setRenameId(null); }}/></label><div className="modal-actions"><button onClick={() => setRenameId(null)}>취소</button><button className="primary" onClick={saveRename}>저장</button></div></div></div>}
   </main>;
