@@ -21,7 +21,6 @@ export default function Page() {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [modal, setModal] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [renameId, setRenameId] = useState<number|null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [draft, setDraft] = useState({ name:'새 인물', sex:'남성' as '남성'|'여성', height:175, weight:65, head:7.5 });
@@ -44,12 +43,24 @@ export default function Page() {
   const openRename = (item:Character) => { setRenameId(item.id); setRenameValue(item.name); };
   const saveRename = () => { if (renameId===null) return; setItems(items.map((item) => item.id===renameId ? {...item,name:renameValue.trim()||item.name} : item)); setRenameId(null); };
   const fitCanvas = () => { canvasRef.current?.scrollTo({left:0,top:0,behavior:'smooth'}); };
-  const exportPng = () => {
-    const svgs = Array.from(canvasRef.current?.querySelectorAll<SVGSVGElement>('.mannequin') || []); if (!svgs.length) return;
+  const buildExportSvg = () => {
+    const svgs = Array.from(canvasRef.current?.querySelectorAll<SVGSVGElement>('.mannequin') || []); if (!svgs.length) return null;
     const root=document.createElementNS('http://www.w3.org/2000/svg','svg'); root.setAttribute('xmlns','http://www.w3.org/2000/svg'); root.setAttribute('viewBox','0 0 1200 1100');
     const background=document.createElementNS('http://www.w3.org/2000/svg','rect'); background.setAttribute('width','1200'); background.setAttribute('height','1100'); background.setAttribute('fill','white'); root.appendChild(background);
     svgs.forEach((svg,index)=>{ const group=document.createElementNS('http://www.w3.org/2000/svg','g'); group.setAttribute('transform',`translate(${80+index*260} 50) scale(.82)`); group.appendChild(svg.cloneNode(true)); root.appendChild(group); });
-    const data = new XMLSerializer().serializeToString(root); const image = new Image();
+    return new XMLSerializer().serializeToString(root);
+  };
+  const openPreview = () => {
+    const data=buildExportSvg(); if(!data) return;
+    const win=window.open('','body-mannequin-preview','width=1100,height=850,resizable=yes,scrollbars=yes');
+    if(!win) return;
+    const src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(data);
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><title>이미지 미리보기</title><style>html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-serif}header{height:54px;display:flex;align-items:center;padding:0 22px;background:#fff;border-bottom:1px solid #dfe6ee;color:#334155;font-size:14px;font-weight:700}.stage{padding:28px;display:flex;justify-content:center}.stage img{display:block;width:min(1200px,100%);height:auto;background:#fff;box-shadow:0 8px 30px #2030401f;border-radius:8px}</style></head><body><header>이미지 미리보기</header><div class="stage"><img src="${src}" alt="마네킹 이미지 미리보기"></div></body></html>`);
+    win.document.close();
+  };
+  const exportPng = () => {
+    const data=buildExportSvg(); if(!data) return; const image = new Image();
     image.onload = () => { const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 1100; const context = canvas.getContext('2d')!; context.fillStyle = 'white'; context.fillRect(0,0,canvas.width,canvas.height); context.drawImage(image,0,0); const link = document.createElement('a'); link.download = 'body-mannequin-comparison.png'; link.href = canvas.toDataURL('image/png'); link.click(); };
     image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data);
   };
@@ -104,8 +115,7 @@ export default function Page() {
       </div>}
       </div>
     </aside>
-    <footer><span>Body Mannequin Designer <small>v0.1 · Phase 5</small></span><div className="footer-actions"><button className="preview-button" onClick={() => setPreviewOpen(true)}>미리보기</button><button onClick={exportPng}>마네킹 이미지 저장</button></div></footer>
-    {previewOpen && <div className="modal-backdrop preview-backdrop" onClick={() => setPreviewOpen(false)}><div className="preview-modal" onClick={(event) => event.stopPropagation()}><div className="preview-head"><strong>이미지 미리보기</strong><button onClick={() => setPreviewOpen(false)}>×</button></div><div className="preview-stage">{specs.map((item) => <div className="preview-figure" key={item.id}><Mannequin spec={item.spec} showReference={referenceVisible} referenceSex={item.sex} referenceOpacity={referenceOpacity/100} mannequinOpacity={mannequinOpacity/100} showCenterLine={false} showHeightGuide={false} referenceOnly={!mannequinVisible} presetLevel={resolvedPreset(item.height,item.weight,item.presetMode,item.manualPreset)}/><span>{item.name} · {item.height}cm</span></div>)}</div></div></div>}
+    <footer><span>Body Mannequin Designer <small>v0.1 · Phase 5</small></span><div className="footer-actions"><button className="preview-button" onClick={openPreview}>미리보기</button><button onClick={exportPng}>마네킹 이미지 저장</button></div></footer>
     {modal && <div className="modal-backdrop"><div className="modal"><h2>인물 추가</h2><label>이름<input value={draft.name} onChange={(event) => setDraft({...draft,name:event.target.value})}/></label><label>성별<select value={draft.sex} onChange={(event) => setDraft({...draft,sex:event.target.value as '남성'|'여성'})}><option>남성</option><option>여성</option></select></label><div className="row"><label>키(cm)<input type="number" value={draft.height} onChange={(event) => setDraft({...draft,height:+event.target.value})}/></label><label>체중(kg)<input type="number" value={draft.weight} onChange={(event) => setDraft({...draft,weight:+event.target.value})}/></label></div><label>등신(H)<input type="number" step=".1" value={draft.head} onChange={(event) => setDraft({...draft,head:+event.target.value})}/></label><div className="modal-actions"><button onClick={() => setModal(false)}>취소</button><button className="primary" onClick={add}>추가하기</button></div></div></div>}
     {renameId!==null && <div className="modal-backdrop" onDoubleClick={() => setRenameId(null)}><div className="modal" onDoubleClick={(event) => event.stopPropagation()}><h2>이름 수정</h2><label>인물 이름<input autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onKeyDown={(event) => { if(event.key==='Enter') saveRename(); if(event.key==='Escape') setRenameId(null); }}/></label><div className="modal-actions"><button onClick={() => setRenameId(null)}>취소</button><button className="primary" onClick={saveRename}>저장</button></div></div></div>}
   </main>;
