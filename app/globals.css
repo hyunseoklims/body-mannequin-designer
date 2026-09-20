@@ -25,3 +25,7 @@
 .app.left-collapsed .left .sidebar-content,.app.right-collapsed .right .sidebar-content{display:none}
 .app.left-collapsed .left-toggle{right:-14px}
 .app.right-collapsed .right-toggle{left:-14px}
+
+/* Align primary sidebar text rows */
+.right .sidebar-content{padding-top:74px}
+.left .side-title,.right .panel-title{min-height:18px;align-items:center}
