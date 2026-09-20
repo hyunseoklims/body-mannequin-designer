@@ -2,7 +2,7 @@ import type { BodySpec } from '../lib/body-model';
 import { createMannequinGeometry } from '../lib/mannequin-geometry';
 import { debugPointTitle, getDebugPoints } from '../lib/geometry-debug';
 import { getReferenceMetadata } from '../lib/reference-metadata';
-import type { BodyPresetLevel } from '../lib/body-presets';
+import { getBodyPresetMetadata, type BodyPresetLevel } from '../lib/body-presets';
 
 type MannequinProps={spec:BodySpec;debug?:boolean;activeDebugKey?:string;showReference?:boolean;referenceSex?:'남성'|'여성';referenceOpacity?:number;mannequinOpacity?:number;showCenterLine?:boolean;showHeightGuide?:boolean;className?:string;referenceOnly?:boolean;presetLevel?:BodyPresetLevel};
 
@@ -27,6 +27,13 @@ export default function Mannequin({spec,debug=false,activeDebugKey='shoulder',sh
   const rightFingertip=controlPoint('middleFingerTip-right');
   const debugPoints=debug?getDebugPoints(geometry.points,activeDebugKey):[];
   const reference=getReferenceMetadata(referenceSex||spec.sex);
+  const preset=getBodyPresetMetadata(referenceSex||spec.sex,presetLevel);
+  const presetPersonHeight=preset.baselineY-preset.headTopY;
+  const presetScale=geometry.height/presetPersonHeight;
+  const presetCropWidth=preset.sourceWidth*presetScale;
+  const presetCropHeight=preset.sourceHeight*presetScale;
+  const presetCropX=geometry.centerX-(preset.centerX-preset.sourceX)*presetScale;
+  const presetCropY=geometry.floorY-(preset.baselineY-preset.sourceY)*presetScale;
   const referencePersonHeight=reference.baselineY-reference.headTopY;
   const referenceScale=geometry.height/referencePersonHeight;
   const referenceImageWidth=reference.width*referenceScale;
@@ -38,8 +45,10 @@ export default function Mannequin({spec,debug=false,activeDebugKey='shoulder',sh
   const heightGuideColor=spec.sex==='남성'?'#3478f6':'#ed4f64';
 
   return <svg className={`mannequin ${className}`} viewBox={`0 0 ${geometry.width} ${geometry.height}`} style={{height:'100%'}} aria-label={`${spec.height}cm ${spec.sex} 정면 인체 마네킹`} data-profile={spec.profileId} data-geometry-valid={geometry.validation.valid} data-geometry-errors={geometry.validation.errors.join(',')} data-constraint-adjustments={spec.constraintAdjustments.join(',')} data-height-span={geometry.landmarks.floorContactY-geometry.landmarks.topY} data-floor-contact-y={geometry.landmarks.floorContactY} data-preset-level={presetLevel}>
-    {showReference&&<g className="reference-overlay" transform={overlayTransform} opacity={referenceOpacity}>
-      <image href={reference.src} x={referenceImageX} y={referenceImageY} width={referenceImageWidth} height={referenceImageHeight} preserveAspectRatio="none"/>
+    {showReference&&<g className="reference-overlay preset-reference" transform={overlayTransform} opacity={referenceOpacity}>
+      <svg x={presetCropX} y={presetCropY} width={presetCropWidth} height={presetCropHeight} viewBox={`${preset.sourceX} ${preset.sourceY} ${preset.sourceWidth} ${preset.sourceHeight}`} preserveAspectRatio="none" overflow="hidden">
+        <image href={preset.src} x="0" y="0" width="1536" height="1024" preserveAspectRatio="none"/>
+      </svg>
     </g>}
     {showHeightGuide&&<g className="height-guide-line" pointerEvents="none">
       <path d={`M 8 ${heightGuideY} H ${geometry.centerX}`} fill="none" stroke={heightGuideColor} strokeWidth="1.5" opacity=".82"/>
